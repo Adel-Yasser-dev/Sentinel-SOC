@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="shieldGrad" x1="16" y1="12" x2="48" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f2e9e4"/>
+      <stop offset="50%" stop-color="#c9ada7"/>
+      <stop offset="100%" stop-color="#4a4e69"/>
+    </linearGradient>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#22223b"/>
+      <stop offset="100%" stop-color="#141524"/>
+    </linearGradient>
+    <radialGradient id="radarGlow" cx="32" cy="32" r="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#c9ada7" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#22223b" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="64" height="64" rx="16" fill="url(#bgGrad)"/>
+  <rect width="64" height="64" rx="16" stroke="#4a4e69" stroke-width="1.5" stroke-opacity="0.6"/>
+
+  <!-- Radar Glow -->
+  <circle cx="32" cy="32" r="22" fill="url(#radarGlow)"/>
+
+  <!-- Concentric Radar Rings -->
+  <circle cx="32" cy="32" r="18" stroke="#9a8c98" stroke-width="1" stroke-opacity="0.3" stroke-dasharray="3 3"/>
+  <circle cx="32" cy="32" r="11" stroke="#9a8c98" stroke-width="1" stroke-opacity="0.4"/>
+
+  <!-- Crosshair Guides -->
+  <line x1="32" y1="14" x2="32" y2="50" stroke="#9a8c98" stroke-width="1" stroke-opacity="0.25"/>
+  <line x1="14" y1="32" x2="50" y2="32" stroke="#9a8c98" stroke-width="1" stroke-opacity="0.25"/>
+
+  <!-- Outer Tactical Shield Contour -->
+  <path d="M32 12L46 17.5V29.5C46 39.5 39.5 47.5 32 51C24.5 47.5 18 39.5 18 29.5V17.5L32 12Z" 
+        stroke="url(#shieldGrad)" 
+        stroke-width="2.5" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"/>
+
+  <!-- Center Core Sensor Node -->
+  <circle cx="32" cy="32" r="3.5" fill="#f2e9e4"/>
+  <circle cx="32" cy="32" r="6" stroke="#c9ada7" stroke-width="1" stroke-opacity="0.7"/>
+
+  <!-- Active Tactical Threat Alert Blip (Pulse) -->
+  <circle cx="41" cy="23" r="5" fill="#ff6a4d" fill-opacity="0.35"/>
+  <circle cx="41" cy="23" r="2.5" fill="#ff6a4d"/>
+</svg>
