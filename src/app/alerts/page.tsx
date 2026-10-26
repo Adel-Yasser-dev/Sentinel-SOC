@@ -13,6 +13,9 @@ import {
   ChevronRight,
 } from "lucide-react";
 
+import { useTelemetry } from "@/lib/telemetry-context";
+import { formatTime } from "@/lib/backend-api";
+
 interface AlertRecord {
   id: string;
   severity: "Critical" | "High" | "Medium" | "Low";
@@ -22,6 +25,14 @@ interface AlertRecord {
   tactic: string;
   host: string;
   detected: string;
+  processid?: number;
+  parentProcessId?: number;
+  userId?: number;
+  mountNamespace?: number;
+  eventName?: string;
+  comm?: string;
+  rawEvent?: string;
+  aiResult?: string;
 }
 
 const allAlertsData: AlertRecord[] = [
@@ -158,6 +169,7 @@ const allAlertsData: AlertRecord[] = [
 ];
 
 export default function AlertsPage() {
+  const { events, updateStatus } = useTelemetry();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSeverity, setSelectedSeverity] = useState("All");
   const [selectedStatus, setSelectedStatus] = useState("All");
@@ -166,9 +178,43 @@ export default function AlertsPage() {
   const [investigatingAlert, setInvestigatingAlert] =
     useState<AlertRecord | null>(null);
 
+  const sourceAlerts = useMemo(() => {
+    if (!events || events.length === 0) return allAlertsData;
+    const severityMap: Record<string, "Critical" | "High" | "Medium" | "Low"> = {
+      critical: "Critical",
+      high: "High",
+      medium: "Medium",
+      low: "Low",
+    };
+    const statusMap: Record<string, "Open" | "Resolved" | "False positive"> = {
+      open: "Open",
+      investigating: "Open",
+      resolved: "Resolved",
+      false_positive: "False positive",
+    };
+    return events.map((evt) => ({
+      id: evt.alertId || `ALT-${evt.id}`,
+      severity: severityMap[evt.severity || "medium"] || "Medium",
+      alert: evt.title,
+      status: statusMap[evt.status] || "Open",
+      technique: evt.technique,
+      tactic: evt.tactic,
+      host: evt.hostName || "Unknown host",
+      detected: evt.timestamp ? formatTime(evt.timestamp) : "Recently",
+      processid: evt.processid,
+      parentProcessId: evt.parentProcessId,
+      userId: evt.userId,
+      mountNamespace: evt.mountNamespace,
+      eventName: evt.eventName ?? undefined,
+      comm: evt.comm ?? undefined,
+      rawEvent: evt.rawEvent ?? undefined,
+      aiResult: evt.aiResult ?? undefined,
+    }));
+  }, [events]);
+
   // Filter logic
   const filteredAlerts = useMemo(() => {
-    return allAlertsData.filter((item) => {
+    return sourceAlerts.filter((item) => {
       if (selectedSeverity !== "All" && item.severity !== selectedSeverity)
         return false;
       if (selectedStatus !== "All" && item.status !== selectedStatus)
@@ -186,7 +232,7 @@ export default function AlertsPage() {
       }
       return true;
     });
-  }, [searchQuery, selectedSeverity, selectedStatus, selectedTactic]);
+  }, [sourceAlerts, searchQuery, selectedSeverity, selectedStatus, selectedTactic]);
 
   const totalAlertsCount = 48; // Canonical number from Figma screen
 
@@ -385,9 +431,13 @@ export default function AlertsPage() {
         alert={investigatingAlert}
         onClose={() => setInvestigatingAlert(null)}
         onResolve={(id) => {
+          updateStatus(id, "resolved");
           setInvestigatingAlert((prev) =>
             prev && prev.id === id ? { ...prev, status: "Resolved" } : prev
           );
+        }}
+        onUpdateStatus={(id, status) => {
+          updateStatus(id, status);
         }}
       />
     </DashboardShell>

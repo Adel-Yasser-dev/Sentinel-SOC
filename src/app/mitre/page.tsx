@@ -109,10 +109,41 @@ const mitreTactics: MitreTactic[] = [
   },
 ];
 
+import { useTelemetry } from "@/lib/telemetry-context";
+import { readAnalysis, getMappings } from "@/lib/backend-api";
+
 export default function MitrePage() {
+  const { events } = useTelemetry();
   const [selectedTactic, setSelectedTactic] = useState<MitreTactic | null>(
     null,
   );
+
+  const tacticsData = React.useMemo(() => {
+    if (!events || events.length === 0) return mitreTactics;
+
+    const countByTactic = new Map<string, { count: number; techniques: Set<string> }>();
+    for (const item of events) {
+      const analysis = readAnalysis(item);
+      const mappings = getMappings(analysis);
+      for (const m of mappings) {
+        const normTactic = m.tactic.toLowerCase();
+        const existing = countByTactic.get(normTactic) || { count: 0, techniques: new Set<string>() };
+        existing.count++;
+        if (m.technique) existing.techniques.add(m.technique);
+        countByTactic.set(normTactic, existing);
+      }
+    }
+
+    return mitreTactics.map((t) => {
+      const match = countByTactic.get(t.name.toLowerCase());
+      if (!match) return t;
+      return {
+        ...t,
+        count: t.count + match.count,
+        techniques: Array.from(new Set([...t.techniques, ...Array.from(match.techniques)])),
+      };
+    });
+  }, [events]);
 
   return (
     <DashboardShell title="Miter ATTA&CK">
@@ -130,7 +161,7 @@ export default function MitrePage() {
 
         {/* 10 Tactics Grid with Staggered Card Entrance */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-          {mitreTactics.map((item, idx) => (
+          {tacticsData.map((item, idx) => (
             <motion.div
               key={item.id}
               onClick={() => setSelectedTactic(item)}

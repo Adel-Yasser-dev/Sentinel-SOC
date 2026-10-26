@@ -8,6 +8,9 @@ import { StatusPill } from "@/components/ui/status-pill";
 import { ChevronRight } from "lucide-react";
 import { AlertInvestigationDrawer } from "@/components/alerts/alert-investigation-drawer";
 
+import { useTelemetry } from "@/lib/telemetry-context";
+import { formatTime } from "@/lib/backend-api";
+
 export interface AlertItem {
   id: string;
   severity: "Critical" | "High" | "Medium" | "Low";
@@ -17,6 +20,14 @@ export interface AlertItem {
   host: string;
   detected: string;
   tactic?: string;
+  processid?: number;
+  parentProcessId?: number;
+  userId?: number;
+  mountNamespace?: number;
+  eventName?: string;
+  comm?: string;
+  rawEvent?: string;
+  aiResult?: string;
 }
 
 export const sampleLatestAlerts: AlertItem[] = [
@@ -103,9 +114,46 @@ export const sampleLatestAlerts: AlertItem[] = [
 ];
 
 export function LatestAlertsTable({ delay = 0.66 }: { delay?: number }) {
-  const [alerts, setAlerts] = useState<AlertItem[]>(sampleLatestAlerts);
+  const { events, updateStatus } = useTelemetry();
   const [investigatingAlert, setInvestigatingAlert] =
     useState<AlertItem | null>(null);
+
+  const alerts: AlertItem[] = React.useMemo(() => {
+    return events.slice(0, 8).map((evt) => {
+      const severityMap: Record<string, "Critical" | "High" | "Medium" | "Low"> = {
+        critical: "Critical",
+        high: "High",
+        medium: "Medium",
+        low: "Low",
+      };
+
+      const statusMap: Record<string, "Open" | "Resolved" | "False positive"> = {
+        open: "Open",
+        investigating: "Open",
+        resolved: "Resolved",
+        false_positive: "False positive",
+      };
+
+      return {
+        id: evt.alertId || `ALT-${evt.id}`,
+        severity: severityMap[evt.severity || "medium"] || "Medium",
+        alert: evt.title,
+        status: statusMap[evt.status] || "Open",
+        technique: evt.technique,
+        host: evt.hostName || "Unknown host",
+        detected: evt.timestamp ? formatTime(evt.timestamp) : "Recently",
+        tactic: evt.tactic,
+        processid: evt.processid,
+        parentProcessId: evt.parentProcessId,
+        userId: evt.userId,
+        mountNamespace: evt.mountNamespace,
+        eventName: evt.eventName ?? undefined,
+        comm: evt.comm ?? undefined,
+        rawEvent: evt.rawEvent ?? undefined,
+        aiResult: evt.aiResult ?? undefined,
+      };
+    });
+  }, [events]);
 
   return (
     <>
@@ -189,9 +237,10 @@ export function LatestAlertsTable({ delay = 0.66 }: { delay?: number }) {
         alert={investigatingAlert}
         onClose={() => setInvestigatingAlert(null)}
         onResolve={(id) => {
-          setAlerts((prev) =>
-            prev.map((a) => (a.id === id ? { ...a, status: "Resolved" } : a))
-          );
+          updateStatus(id, "resolved");
+        }}
+        onUpdateStatus={(id, status) => {
+          updateStatus(id, status);
         }}
       />
     </>

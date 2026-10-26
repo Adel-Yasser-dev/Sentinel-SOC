@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
+const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5086").replace(/\/$/, "");
+
 const nextConfig: NextConfig = {
-  /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
@@ -11,6 +12,26 @@ const nextConfig: NextConfig = {
         as: "*.css",
       },
     },
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/api/logs",
+        destination: `${backendUrl}/api/logs`,
+      },
+      {
+        source: "/api/logs/:path*",
+        destination: `${backendUrl}/api/logs/:path*`,
+      },
+      {
+        source: "/logs",
+        destination: `${backendUrl}/logs`,
+      },
+      {
+        source: "/logs/:path*",
+        destination: `${backendUrl}/logs/:path*`,
+      },
+    ];
   },
 };
 
